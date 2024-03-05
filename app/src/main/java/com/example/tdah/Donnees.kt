@@ -5,7 +5,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 data class Donnees (
-
         val timestamp: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd:HH:mm:ss.SSS")),
         val user: String? = null,
         val acceX: Float? = null,

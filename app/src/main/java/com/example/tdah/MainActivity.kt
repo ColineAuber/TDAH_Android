@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        startGyroscopeListener()
+        //startGyroscopeListener()
     }
 
     @SuppressLint("SuspiciousIndentation")
@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
 
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         setContent {
-            SensorDataCollector()
+            //SensorDataCollector()
             TDAHTheme {
                 // A surface container using the 'background' color from the theme
                 val navController = rememberNavController()
@@ -63,7 +63,7 @@ class MainActivity : ComponentActivity() {
                     composable("Bienvenue") {
                         LaunchedEffect(Unit) {
                             // Utilisez LaunchedEffect pour effectuer des actions au premier lancement du composable
-                            startGyroscopeListener()
+                           // startGyroscopeListener()
                         }
                         Bienvenue(navController)
                     }
@@ -72,11 +72,10 @@ class MainActivity : ComponentActivity() {
                         if (!File(idFile, "autorisation.txt").exists()) {
                             Demande_collecte(navController, idFile)
                         } else {
-                            // TODO : quand on a accepté on ne peut pas revenir en arrière (idée : créer une nouvelle page qui repose la question et qui supprime le fichier si on veut arrêter la collecte de données)
                             autorisation = File(getDir("autorisation", 0), "autorisation.txt").readText();
                                 if( autorisation == "1") {
                                     //navController.navigate("Accord_collecte")
-                                    startGyroscopeListener()
+                                   // startGyroscopeListener()
                                     Accord_collecte(navController)
                                 }else{
                                     Demande_collecte(navController, idFile)
@@ -89,7 +88,7 @@ class MainActivity : ComponentActivity() {
                     composable("Accord_collecte") {
                         LaunchedEffect(Unit) {
                             // Utilisez LaunchedEffect pour effectuer des actions au premier lancement du composable
-                            startGyroscopeListener()
+                           // startGyroscopeListener()
                         }
                         Accord_collecte(navController)
                     }
@@ -100,7 +99,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
+/*
     @Composable
     fun SensorDataCollector() {
         Surface(
@@ -114,6 +113,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+ */
+/*
     private fun startGyroscopeListener() {
 
         if (autorisation == "1") {
@@ -146,5 +147,9 @@ class MainActivity : ComponentActivity() {
                 SensorManager.SENSOR_DELAY_NORMAL
             )
         }
+
+
     }
+
+ */
 }

@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.tdah"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
@@ -61,6 +61,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     testImplementation("junit:junit:4.13.2")
 
+
     implementation("androidx.compose.material3:material3:1.1.2")
     implementation("androidx.contentpager:contentpager:1.0.0")
     testImplementation("junit:junit:4.13.2")
@@ -75,6 +76,11 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.compose.material:material:1.3.1")
     implementation("androidx.compose.material:material-icons-extended-android:1.5.3")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:3.14.9")
+    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
+    implementation("com.squareup.moshi:moshi:1.12.0")
+
 
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")

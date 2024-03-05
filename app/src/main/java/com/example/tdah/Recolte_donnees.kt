@@ -1,63 +1,161 @@
 package com.example.tdah
 
-import android.content.Context
+import android.app.Activity
 import android.hardware.Sensor
-import android.hardware.SensorManager
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
-import androidx.core.content.ContextCompat.getSystemService
+import android.hardware.SensorManager
+import android.os.Bundle
+import android.view.WindowManager
+//import com.example.getSmart.databinding.ActivityTransmitBinding
+import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import kotlin.concurrent.fixedRateTimer
 
-class Recolte_donnees {
+class TransmitActivity : Activity() , SensorEventListener{
 
+    //Initialize sensors
     private lateinit var sensorManager: SensorManager
-
     private var accel: Sensor? = null
     private var gyro: Sensor? = null
-    private var bpm: Sensor? = null
 
+    private var bpm: Sensor? = null
     private var xaccel: Float = 0F
     private var yaccel: Float = 0F
     private var zaccel: Float = 0F
     private var xgyro: Float = 0F
     private var ygyro: Float = 0F
     private var zgyro: Float = 0F
-    private var valueBpm = "0"
+    private var hvalue = "0"
+    private var stop: Boolean = false
+    private val transmit = Transmission_donnees()
 
 
-    fun Initialise(){
-        // initialise les capteurs
+    //Set samplingPeriod and send interval
+    private val samplingPeriod: Long = 20    //Sensor sampling period in ms
+    private val sendInterval: Int = 6000      //Interval between batch of samples send to the server in miliseconds
+    //(sendInterval)/samplingPeriod) = fréquence pour l'instant 30Hz*10s
 
-       // sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    override fun onCreate(savedInstanceState: Bundle?) {
 
-        gyro = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-        accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        bpm = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+        super.onCreate(savedInstanceState)
 
+        //Setup sensors
+        sensorSetup()
+
+        //Keep the screen on when transmitting data
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+        // token is the time at the start of the recording, using this it is possible to distinguish recording sessions
+        val token = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd:HH:mm:ss.SSS"))
+
+        //Read the userID from the internal storage
+        val userID = File(getDir("userID", 0), "userID.txt").readText()
+
+        //Find current activity
+        val activity = intent.getStringExtra("activity").toString()
+
+        val dataSet = mutableListOf<Donnees>()
+        var i=0
+        var j = 0
+
+        val autorisationDir = File(getDir("autorisation", 0), "autorisation.txt")
+
+        // Vérifiez si le fichier existe
+        if (autorisationDir.exists()) {
+            // Lisez le contenu du fichier
+            val autorisation = autorisationDir.readText()
+            fixedRateTimer("timer", true, 100, samplingPeriod) {
+
+                if (autorisation == "1") {
+                    val data = Donnees(
+                        user = userID,
+                        acceX = xaccel,
+                        acceY = yaccel,
+                        acceZ = zaccel,
+                        gyroX = xgyro,
+                        gyroY = ygyro,
+                        gyroZ = zgyro,
+                        bpm = hvalue,
+                        token = token,
+                        label = activity
+                    )
+                    //dataSet is empty at first, dataSet.add adds new object to the list.
+                    //The next sendInterval the data needs to be overwritten, so dataSet[i] = data is used.
+                    if(j == 0){
+                        dataSet.add(data)
+                    } else {
+                        dataSet[i] = data
+                    }
+
+                    //Transmit the data every sendInterval
+                    if (i == (((sendInterval)/samplingPeriod)-1).toInt()){
+                        //Padding the array to 50 samples for testing the battery life
+//                    if(j == 0) {
+//                        while (i < 49) {
+//                            dataSet.add(data)
+//                            i++
+//                        }
+//                    }
+                        println(dataSet)
+                        transmit.transmitData(dataSet)
+
+                        i=0
+                        j=1
+                    }else{
+                        i++
+                    }
+                }
+            }
+        }
     }
 
-    fun Donnees_instant(event: SensorEvent) {
-        // récupère les données à un instant t
+    //Sensor setup
+    private fun sensorSetup(){
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
-            // Accelerometer
+        accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        gyro = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        bpm = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+
+        accel?.also { accelerometer ->
+            sensorManager.registerListener(this, accelerometer, (samplingPeriod*1000).toInt())
+        }
+        gyro?.also { light ->
+            sensorManager.registerListener(this, light, (samplingPeriod*1000).toInt())
+        }
+        bpm?.also { light ->
+            sensorManager.registerListener(this, light, (samplingPeriod*1000).toInt())
+        }
+    }
+
+    // Receive sensor data
+    override fun onSensorChanged(event: SensorEvent) {
+
+        // Accelerometer
+        if((event.sensor.type == Sensor.TYPE_ACCELEROMETER)) {
             xaccel = event.values[0].toString().toFloat()
             yaccel = event.values[1].toString().toFloat()
             zaccel = event.values[2].toString().toFloat()
+        }
 
-            // Gyroscope
+        // Gyroscope
+        if(event.sensor.type == Sensor.TYPE_GYROSCOPE) {
             xgyro = event.values[0].toString().toFloat()
             ygyro = event.values[1].toString().toFloat()
             zgyro = event.values[2].toString().toFloat()
+        }
 
-
-            // Heartrate
-            valueBpm = event.values[0].toString()
+        // Heartrate
+        if(event.sensor.type == Sensor.TYPE_HEART_RATE) {
+            hvalue = event.values[0].toString()
+        }
     }
 
-    fun Recuperation_donnees(freq: Int, boolGyro: Boolean, boolAccel: Boolean, boolBpm: Boolean){
-        // freq : fréquence de récupération des données
-        // boolGyro : true= on récupère les données du capteur gyroscope
-        // récupère les données en fonction fréquence/ capteurs souhaités avec la fonction Données_instant()
-
+    // Detect accuracy change of sensor
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
     }
 
+    override fun onBackPressed() {}
 }
