@@ -7,13 +7,23 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.view.WindowManager
-//import com.example.getSmart.databinding.ActivityTransmitBinding
+import android.widget.ImageView
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.findNavController
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.concurrent.fixedRateTimer
+import com.example.tdah.databinding.RecolteDonneesActivityBinding
 
-class TransmitActivity : Activity() , SensorEventListener{
+class RecolteDonneesActivity: Activity() , SensorEventListener{
+
+    private lateinit var navController: NavController
+
+    private lateinit var binding: RecolteDonneesActivityBinding
+
+    val stopButton : ImageView = findViewById(R.id.cancelImageView)
 
     //Initialize sensors
     private lateinit var sensorManager: SensorManager
@@ -39,7 +49,15 @@ class TransmitActivity : Activity() , SensorEventListener{
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
+        // Je veux passer le navController d'une Activity à une autre : MainActivity -> RecolteDonneesActivity
+        stopButton.setOnClickListener{
+            navController.navigate("Annuler")
+        }
+
         super.onCreate(savedInstanceState)
+
+        binding = RecolteDonneesActivityBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         //Setup sensors
         sensorSetup()
@@ -50,15 +68,14 @@ class TransmitActivity : Activity() , SensorEventListener{
         // token is the time at the start of the recording, using this it is possible to distinguish recording sessions
         val token = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd:HH:mm:ss.SSS"))
 
-        //Read the userID from the internal storage
-        val userID = File(getDir("userID", 0), "userID.txt").readText()
-
         //Find current activity
         val activity = intent.getStringExtra("activity").toString()
 
         val dataSet = mutableListOf<Donnees>()
         var i=0
         var j = 0
+
+        println("On est rentré dans le onCreate")
 
         val autorisationDir = File(getDir("autorisation", 0), "autorisation.txt")
 
@@ -70,7 +87,7 @@ class TransmitActivity : Activity() , SensorEventListener{
 
                 if (autorisation == "1") {
                     val data = Donnees(
-                        user = userID,
+                        user = "15",
                         acceX = xaccel,
                         acceY = yaccel,
                         acceZ = zaccel,
@@ -98,8 +115,9 @@ class TransmitActivity : Activity() , SensorEventListener{
 //                            i++
 //                        }
 //                    }
+                        println("---------------------------------------------------------------------------->")
                         println(dataSet)
-                        transmit.transmitData(dataSet)
+                        //transmit.transmitData(dataSet)
 
                         i=0
                         j=1
@@ -113,6 +131,9 @@ class TransmitActivity : Activity() , SensorEventListener{
 
     //Sensor setup
     private fun sensorSetup(){
+
+        println("On est rentré dans le sensorSetup()")
+
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
         accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -159,3 +180,4 @@ class TransmitActivity : Activity() , SensorEventListener{
 
     override fun onBackPressed() {}
 }
+
