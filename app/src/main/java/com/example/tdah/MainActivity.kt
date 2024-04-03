@@ -1,10 +1,8 @@
 package com.example.tdah
 
 import android.annotation.SuppressLint
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,17 +13,15 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
 import com.example.tdah.ui.theme.TDAHTheme
-import com.google.common.util.concurrent.ListenableFuture
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.util.UUID
-import java.util.concurrent.ExecutionException
 
 
 class MainActivity : ComponentActivity() {
@@ -33,83 +29,78 @@ class MainActivity : ComponentActivity() {
     var autorisation: String? = null
     // TODO : vérifier que c'est le bon type
 
-//SINGER CODE
-    /*
-    private val readSensorRequest: WorkRequest =
-        OneTimeWorkRequestBuilder<WorkerCapteurs>()
-            .build()
-
-    private fun startWork() {
-        WorkManager
-            .getInstance(baseContext)
-            .enqueue(readSensorRequest)
-
-    }
-
-    private fun stopWork() {
-        WorkManager.getInstance(baseContext).cancelWorkById(readSensorRequest.id)
-    }
-*/
     private lateinit var idFileWorker: File
+    private lateinit var idFilePatient: File
+
+    //var sharedpreferences: SharedPreferences? = null
+    //val editor = null
+
+    //val preferencesManager =  PreferencesManager(this@MainActivity)
 
     private var readSensorRequest: WorkRequest? = null
 
+    /*
     private fun createWorkRequest() {
         readSensorRequest = OneTimeWorkRequestBuilder<WorkerCapteurs>().addTag("workerTag").build()
-        // readSensorRequest = OneTimeWorkRequestBuilder<WorkerCapteurs>().build()
     }
 
     private fun startWork() {
         createWorkRequest()
         readSensorRequest?.let { request ->
             WorkManager.getInstance(baseContext).enqueue(request)
-            /*
-            val texte = request.toString()
-            idFileWorker.writeText(texte)
-             */
         }
         readSensorRequest?.id?.let { requestId ->
             idFileWorker = File(getDir("autorisation", 0), "workerId.txt")
             val id = requestId.toString()
             idFileWorker.writeText(id)
-            println("Etape 0 ok / workerId =" + requestId)
+        }
+    }
+     */
+
+    private fun startWork() {
+        val enteredUsername = try {
+            idFilePatient.readText()
+            println("MainActivity ID =" + idFilePatient.readText())
+        } catch (e: FileNotFoundException) {
+            "L'identifiant du patient n'a pas été lu : FileNotFound"
+        }
+
+        createWorkRequest(idFilePatient.absolutePath, enteredUsername)
+        readSensorRequest?.let { request ->
+            WorkManager.getInstance(baseContext).enqueue(request)
+        }
+        readSensorRequest?.id?.let { requestId ->
+            idFileWorker = File(getDir("autorisation", 0), "workerId.txt")
+            val id = requestId.toString()
+            idFileWorker.writeText(id)
         }
     }
 
+    private fun createWorkRequest(idFilePath: String, enteredUsername: Any) {
+        val inputData = Data.Builder()
+            .putString("enteredUsername", enteredUsername.toString())
+            .putString("idFilePatient", idFilePath)
+            .build()
+        readSensorRequest = OneTimeWorkRequestBuilder<WorkerCapteurs>()
+            .addTag("workerTag")
+            .setInputData(inputData)
+            .build()
+    }
+
+
+
     private fun stopWork() {
-        println("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSStop")
         try {
             var workerId : String = idFileWorker.readText() // Lire l'ID du travail à partir du fichier
-            println("Etape 1 ok / workerId =" + workerId)
-            val uuid2: UUID = UUID.nameUUIDFromBytes(workerId.toByteArray())
             val uuid: UUID = UUID.fromString(workerId)
-            println("Etape 2 ok / uuid =" + uuid)
             WorkManager.getInstance(baseContext).cancelWorkById(uuid)
             File(getDir("autorisation", 0), "workerId.txt").delete()
-            println("Etape 3 ok")
         } catch (e: FileNotFoundException) {
-            println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& Aucun worker n'a été arrêté : Fichier non trouvé")
+            println("Aucun worker n'a été arrêté : Fichier non trouvé")
         } catch (e: IOException) {
-            println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& Aucun worker n'a été arrêté : Erreur d'entrée/sortie")
+            println("Aucun worker n'a été arrêté : Erreur d'entrée/sortie")
         }
 
-        /*
-        readSensorRequest?.id?.let { requestId ->
-            WorkManager.getInstance(baseContext).cancelWorkById(requestId)
-        }
-
-         */
-
-        //File(idFileWorker, "workerId.txt").delete()
-
-            /*
-
-        readSensorRequest?.id?.let { requestId ->
-            //WorkManager.getInstance(baseContext).cancelWorkById(requestId)
-            WorkManager.getInstance().cancelAllWork()
-        }
-
-             */
     }
 
 
@@ -117,65 +108,18 @@ class MainActivity : ComponentActivity() {
         super.onResume()
     }
 
-    // Ibrahim
-
-    /*
-    private fun isWorkScheduled(tag: String): Boolean {
-        var context : Context = baseContext
-        val instance = WorkManager.getInstance(context)
-        val statuses = instance.getWorkInfosByTag(tag)
-        return try {
-            var running = false
-            val workInfoList = statuses.get()
-            for (workInfo in workInfoList) {
-                val state: WorkInfo.State = workInfo.state
-                running = (state == WorkInfo.State.RUNNING) or (state == WorkInfo.State.ENQUEUED)
-            }
-            running
-        } catch (e: ExecutionException) {
-            e.printStackTrace()
-            false
-        } catch (e: InterruptedException) {
-            e.printStackTrace()
-            false
-        }
-    }
-
-private fun isWorkScheduled2(tag: String, context: Context): Boolean {
-    val instance = WorkManager.getInstance()
-    val statuses: ListenableFuture<List<WorkInfo>> = instance.getWorkInfosByTag(tag)
-
-    var running = false
-    var workInfoList: List<WorkInfo> = emptyList() // Singleton, no performance penalty
-
-    try {
-        workInfoList = statuses.get()
-    } catch (e: ExecutionException) {
-        Log.d(TAG, "ExecutionException in isWorkScheduled: $e")
-    } catch (e: InterruptedException) {
-        Log.d(TAG, "InterruptedException in isWorkScheduled: $e")
-    }
-
-    for (workInfo in workInfoList) {
-        val state = workInfo.state
-        running = running || (state == WorkInfo.State.RUNNING || state == WorkInfo.State.ENQUEUED)
-    }
-    return running
-}
-
-
-     */
     @SuppressLint("SuspiciousIndentation")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         idFileWorker = File(getDir("autorisation", 0), "workerId.txt")
+        idFilePatient = File(getDir("autorisation", 0), "IdPatient.txt")
         val start: String = "Bienvenue"
         val idFile = getDir("autorisation", 0)
+        val sharedPreferences = applicationContext.getSharedPreferences("Pref", Context.MODE_PRIVATE);
+        autorisation = sharedPreferences.getString("autorisation", "0")
 
         setContent {
-            //SensorDataCollector()
             TDAHTheme {
-                // A surface container using the 'background' color from the theme
                 val navController = rememberNavController()
 
                 Surface(
@@ -189,9 +133,11 @@ private fun isWorkScheduled2(tag: String, context: Context): Boolean {
                 ) {
                     composable("Bienvenue") {
                         LaunchedEffect(Unit) {
+
                             if (!File(idFile, "autorisation.txt").exists()) {
                                 stopWork()
                             }
+
                         }
                         Bienvenue(navController)
                     }
@@ -207,16 +153,6 @@ private fun isWorkScheduled2(tag: String, context: Context): Boolean {
                                     println("***********************************************************")
                                     startWork()
                                 }
-                            /*
-                                if (!isWorkScheduled2("workerTag", baseContext)) {
-                                    //if (!File(idFileWorker, "workerId.txt").exists()) {
-                                    println("***********************************************************")
-                                    startWork()
-                                }
-
-                                 */
-                                //navController.navigate("Accord_collecte")
-                                // startGyroscopeListener()
                                 Accord_collecte(navController)
                             } else {
                                 Demande_collecte(navController, idFile)
@@ -228,13 +164,14 @@ private fun isWorkScheduled2(tag: String, context: Context): Boolean {
                     }
                     composable("Accord_collecte") {
                         LaunchedEffect(Unit) {
-                            // Utilisez LaunchedEffect pour effectuer des actions au premier lancement du composable
-                            // startGyroscopeListener()
                         }
                         Accord_collecte(navController)
                     }
                     composable("Annuler") {
                         Annuler(navController, idFile)
+                    }
+                    composable("SaisieIdentifiant") {
+                        SaisieIdentifiant(navController, idFilePatient)
                     }
                 }
             }

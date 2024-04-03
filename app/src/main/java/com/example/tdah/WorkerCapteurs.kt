@@ -8,7 +8,8 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.SystemClock
-import androidx.work.Worker
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.Moshi
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -35,6 +36,8 @@ class WorkerCapteurs(context: Context, params: WorkerParameters) : CoroutineWork
     private val samplingPeriod: Long = 20
     private val sendInterval: Int = 6000
 
+    val preferencesManager =  PreferencesManager(applicationContext)
+
     init {
         // Code exécuté lors de la création du Worker
         sensorManager = applicationContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -52,74 +55,8 @@ class WorkerCapteurs(context: Context, params: WorkerParameters) : CoroutineWork
             sensorManager.registerListener(this, light, (samplingPeriod * 1000).toInt())
         }
     }
-    /*
-    override suspend fun doWork(): Result {
-        // Token is the time at the start of the recording
-        val token = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd:HH:mm:ss.SSS"))
-
-        // Find current activity
-        val activity = inputData.getString("activity") ?: ""
-
-        val dataSet = mutableListOf<Donnees>()
-        var i = 0
-        var j = 0
-
-        while (!isStopped) {
-            // Calculate data
-            val data = Donnees(
-                user = "15",
-                acceX = xaccel,
-                acceY = yaccel,
-                acceZ = zaccel,
-                gyroX = xgyro,
-                gyroY = ygyro,
-                gyroZ = zgyro,
-                bpm = hvalue,
-                token = token,
-                label = activity
-            )
-
-            // Handle data
-            if (j == 0) {
-                dataSet.add(data)
-            } else {
-                dataSet[i] = data
-            }
-
-            if (i == (((sendInterval) / samplingPeriod) - 1).toInt()) {
-                println("---------------------------------------------------------------------------->")
-                println(dataSet)
-                //transmit.transmitData(dataSet)
-
-                i = 0
-                j = 1
-            } else {
-                i++
-            }
-
-            // Check if the work has been stopped
-            if (isStopped) {
-                // Arrêtez les mises à jour des capteurs si le travail est arrêté
-                /*
-                sensorManager.unregisterListener(this)
-                break
-
-                 */
-            }
-
-            // Sleep for a short duration to avoid consuming too much CPU
-            SystemClock.sleep(samplingPeriod)
-        }
-
-        return Result.success()
-    }
 
 
-     */
-
-
-
- // CODE SINGER
     override suspend fun doWork(): Result {
         // Token is the time at the start of the recording
         val token =
@@ -128,19 +65,28 @@ class WorkerCapteurs(context: Context, params: WorkerParameters) : CoroutineWork
         // Find current activity
         val activity = inputData.getString("activity") ?: ""
 
+        val idFilePath = inputData.getString("idFilePatient")
+        val idFilePatient = if (!idFilePath.isNullOrEmpty()) File(idFilePath) else null
+        val enteredUsername = inputData.getString("enteredUsername") ?: ""
+
+        val fileContent = idFilePatient?.takeIf { it.exists() }?.readText() ?: ""
+
+        // Utilisez le contenu du fichier ici
+        println("Contenu du fichier idFilePatient dans WorkerCapteurs : $fileContent")
+
         val dataSet = mutableListOf<Donnees>()
         var i = 0
         var j = 0
 
         fixedRateTimer("timer", true, 100, samplingPeriod) {
             val data = Donnees(
-                user = "15",
-                acceX = xaccel,
-                acceY = yaccel,
-                acceZ = zaccel,
-                gyroX = xgyro,
-                gyroY = ygyro,
-                gyroZ = zgyro,
+                montre_id = fileContent,
+                accX = xaccel,
+                accY = yaccel,
+                accZ = zaccel,
+                gyrX = xgyro,
+                gyrY = ygyro,
+                gyrZ = zgyro,
                 bpm = hvalue,
                 token = token,
                 label = activity
@@ -159,7 +105,7 @@ class WorkerCapteurs(context: Context, params: WorkerParameters) : CoroutineWork
             if (i == (((sendInterval) / samplingPeriod) - 1).toInt()) {
                 println("-------------------------------------------->$this")
                 println(dataSet)
-                //transmit.transmitData(dataSet)
+                transmit.transmitData(dataSet)
 
                 i = 0
                 j = 1

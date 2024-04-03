@@ -21,7 +21,7 @@ class Transmission_donnees {
 
     private val retrofit = Retrofit.Builder()
         .client(okHttpClient)
-        .baseUrl("http://marijn.ddns.net/")
+        .baseUrl("http://10.187.11.172:5000/")
         .addConverterFactory(MoshiConverterFactory.create())
         .build()
 

@@ -1,5 +1,7 @@
 package com.example.tdah
 
+import android.content.Context
+import android.preference.PreferenceManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,12 +11,15 @@ import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import com.example.tdah.ui.theme.green
@@ -24,6 +29,11 @@ import java.io.File
 
 @Composable
 fun Demande_collecte(navController: NavController, idFile : File) {
+    //val context = LocalContext.current
+    //val preferencesManager = remember { PreferencesManager(context) }
+    //val sharedPreferences = context.getSharedPreferences("Pref", Context.MODE_PRIVATE);
+    //val editor = sharedPreferences.edit()
+
     Surface() {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -59,7 +69,10 @@ fun Demande_collecte(navController: NavController, idFile : File) {
                     Column {
                         Button(
                             onClick = {
+                                //editor.putString("autorisation", "1")
+                                //editor.apply()
                                 navController.navigate("Accord_collecte");
+                                //preferencesManager.saveData("autorisation", "1")
                                 File(idFile, "autorisation.txt").writeText("1")
                             },
                             colors = buttonColors(green)

@@ -59,7 +59,7 @@ fun Bienvenue(navController: NavController) {
 
                     )
                 Button(
-                    onClick = { navController.navigate("Demande_collecte") },
+                    onClick = { navController.navigate("SaisieIdentifiant") },
                     colors = buttonColors(white)
                 ) {
                     Image(

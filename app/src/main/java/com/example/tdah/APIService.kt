@@ -6,7 +6,7 @@ import retrofit2.http.*
 
 
 interface APIService {
-    @POST("/json/post")
+    @POST("/api/donnee_collectees/json")
     suspend fun sendData(@Body Data: List<Donnees>): Response<ResponseBody>
 
 }
