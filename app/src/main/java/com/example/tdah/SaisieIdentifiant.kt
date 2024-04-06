@@ -17,67 +17,83 @@ import java.io.File
 
 @Composable
 fun UsernameInputField(
-    onUsernameChanged: (String) -> Unit,
-    modifier: Modifier = Modifier
+    onUsernameChanged: (String) -> Unit, // Callback pour notifier les changements de l'identifiant
+    onValidation: () -> Unit, // Fonction de validation à appeler lorsque l'utilisateur termine la saisie
+    modifier: Modifier = Modifier // Modifier pour personnaliser l'apparence du champ d'entrée
 ) {
-    var username by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") } // État pour conserver la valeur de l'identifiant
 
     OutlinedTextField(
         value = username,
         onValueChange = {
             username = it
-            onUsernameChanged(it)
+            onUsernameChanged(it) // Appel du callback lorsqu'il y a un changement dans le champ d'entrée
         },
-        label = { Text("Identifiant") },
-        singleLine = true,
+        label = { Text("Identifiant") }, // Libellé du champ d'entrée
+        singleLine = true, // Option pour restreindre la saisie à une seule ligne
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp), // Modifier pour définir la largeur et la marge du champ d'entrée
         keyboardOptions = KeyboardOptions.Default.copy(
-            keyboardType = KeyboardType.Text,
-            imeAction = ImeAction.Done
+            keyboardType = KeyboardType.Text, // Type de clavier pour la saisie de texte
+            imeAction = ImeAction.Done // Action du clavier lorsque l'utilisateur appuie sur "Done"
         ),
         keyboardActions = KeyboardActions(
             onDone = {
-                // You can perform any action here when user presses "Done" on the keyboard
+                // Appel de la fonction de validation lorsque l'utilisateur appuie sur "Done" dans le clavier
+                onValidation()
             }
         ),
-        isError = username.isEmpty(),
+        isError = username.isEmpty(), // Détermine si le champ d'entrée est dans un état d'erreur
         colors = TextFieldDefaults.outlinedTextFieldColors(
-            focusedBorderColor = theme, // Utilisation de la valeur hexadécimale de la couleur définie dans Color.kt
-            unfocusedBorderColor = theme
+            focusedBorderColor = theme, // Couleur de bordure lorsque le champ est sélectionné
+            unfocusedBorderColor = theme // Couleur de bordure lorsque le champ n'est pas sélectionné
         )
     )
 }
 
 @Composable
 fun SaisieIdentifiant(navController: NavController, idFilePatient : File) {
-    var enteredUsername by remember { mutableStateOf("") }
+    var enteredUsername by remember { mutableStateOf("") } // État pour conserver la valeur saisie
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(16.dp), // Modifier pour définir la taille et la marge de la colonne
+        verticalArrangement = Arrangement.Center, // Alignement vertical des éléments dans la colonne
+        horizontalAlignment = Alignment.CenterHorizontally // Alignement horizontal des éléments dans la colonne
     ) {
-        UsernameInputField(onUsernameChanged = { enteredUsername = it })
+        UsernameInputField(
+            onUsernameChanged = { enteredUsername = it }, // Mise à jour de la valeur saisie
+            onValidation = {
+                // Logique de validation et navigation
+                validateAndNavigate(navController, idFilePatient, enteredUsername)
+            }
+        )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp)) // Espacement entre les éléments
 
         Button(
             onClick = {
-                val autorisation = idFilePatient.parentFile
-                if (!autorisation.exists()) {
-                    autorisation.mkdirs() // Crée le répertoire et tous les répertoires parents s'ils n'existent pas
-                }
-                println("SaisieIdentifiant idPatient = " + enteredUsername)
-                idFilePatient.writeText(enteredUsername)
-                navController.navigate("Demande_collecte")
+                // Appel de la fonction de validation lorsque l'utilisateur clique sur le bouton "Valider"
+                validateAndNavigate(navController, idFilePatient, enteredUsername)
             },
-            enabled = enteredUsername.isNotEmpty()
+            enabled = enteredUsername.isNotEmpty() // Activation du bouton lorsque l'identifiant n'est pas vide
         ) {
-            Text(text = "Valider")
+            Text(text = "Valider") // Texte du bouton
         }
     }
 }
+
+// Fonction de validation et de navigation
+private fun validateAndNavigate(navController: NavController, idFilePatient: File, enteredUsername: String) {
+    val autorisation = idFilePatient.parentFile
+    if (!autorisation.exists()) {
+        autorisation.mkdirs() // Crée le répertoire et tous les répertoires parents s'ils n'existent pas
+    }
+    println("SaisieIdentifiant idPatient = $enteredUsername") // Affichage de l'identifiant saisi
+    idFilePatient.writeText(enteredUsername) // Écriture de l'identifiant dans le fichier
+    navController.navigate("Demande_collecte") // Navigation vers la destination suivante
+}
+
+
